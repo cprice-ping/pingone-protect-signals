@@ -1,0 +1,30 @@
+{
+  "name": "pingone-protect-signals",
+  "version": "0.1.0",
+  "description": "A simple Node app built on fastify, instantly up and running. Built to be remixed on Glitch.com.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "type": "module",
+  "dependencies": {
+    "fastify": "^4.6.2",
+    "@fastify/formbody": "^7.4.0",
+    "@fastify/static": "^7.0.3",
+    "btoa": "^1.2.1",
+    "node-fetch": "3.3.2",
+    "newman": "^6.2.1",
+    "@fastify/cors": "^8.x"
+  },
+  "engines": {
+    "node": "16.x"
+  },
+  "repository": {
+    "url": "https://glitch.com/edit/#!/pingone-protect-signals"
+  },
+  "license": "MIT",
+  "keywords": [
+    "node",
+    "glitch"
+  ]
+}

@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>PingOne Protect - SignalsSDK</title>
+
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <link
+      rel="shortcut icon"
+      href="https://cdn.glitch.com/a766be66-dd8a-4fa9-adb0-382568f98cae%2FD0DE7B9A-1F4C-4DFF-9FFD-5A53A78AFA9E.png?v=1630464370995"
+    />
+    <script
+      src="https://assets.pingone.com/signals/web-sdk/5.5.0/signals-sdk.js"
+      defer
+    ></script>
+  </head>
+  <body class="bg-danger">
+    <div class="container-fluid">
+      <div class="col">
+        <div class="card w-50 mx-auto mt-4">
+          <div class="card-body">
+            <h5 class="card-title">
+              PingOne Protect - Signals SDK integration
+            </h5>
+            <p>
+              This page contains the Signals SDK that is used to examine the current device 
+              and pass information to the PingOne Protect Service.
+            </p>
+            <p>
+              When the page loads, the SDK is initialized and is ready to profile the device.
+            </p>
+            <input class="d-none" id="floatInputEmail" value="facile-user">
+            <button class="btn btn-primary mb-3 shadow" id="formSubmit" onclick="getRiskDecision()">
+              Get Decision
+            </button>
+            <div class="card-footer bg-white text-end">
+              <a href="/form.html" class="card-link text-start">Session Interaction</a>
+              <a href="https://glitch.com/edit/#!/pingone-protect-signals" class="card-link">View Code</a>
+              <a href="https://apidocs.pingidentity.com/pingone/native-sdks/v1/api/#pingone-risk-sdk-for-web" class="card-link" target="_blank">Signals SDK</a>
+              <a href="https://apidocs.pingidentity.com/pingone/platform/v1/api/#post-create-risk-evaluation" class="card-link" target="_blank">P1 Protect API</a>
+            </div>
+          </div>
+        </div>
+        <div class="card w-50 mx-auto mt-4 d-none" id="cardPayload" >
+          <div class="card-body">
+            <h6 class="card-title">
+              Signals SDK Payload
+            </h6>
+            <div class="overflow-auto font-monospace fw-light" id="sdkPayload" style="height: 100px"></div>
+          </div>
+        </div>
+        <div class="card w-50 mx-auto mt-4 border-info">
+          <div class="card-header">
+            <ul class="nav nav-tabs card-header-tabs">
+              <li class="nav-item">
+                <a class="nav-link active" id="navResult" aria-current="true" href="#" onclick="showRiskResult()">Result</a>
+              </li>
+              <li class="nav-item">
+                <a
+                  class="nav-link d-none"
+                  id="navHigh"
+                  aria-current="false"
+                  href="#"
+                  onclick="showHighResults()"
+                  >Predictors - HIGH</a
+                >
+              </li>
+              <li class="nav-item">
+                <a
+                  class="nav-link d-none"
+                  id="navMed"
+                  aria-current="false"
+                  href="#"
+                  onclick="showMedResults()"
+                  >Predictors - MED</a
+                >
+              </li>
+              <li class="nav-item">
+                <a
+                  class="nav-link d-none"
+                  id="navLow"
+                  aria-current="false"
+                  href="#"
+                  onclick="showLowResults()"
+                  >Predictors - LOW</a
+                >
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" id="navDetails" aria-current="false" href="#" onclick="showRiskDetails()">Full Response</a>
+              </li>
+            </ul>
+          </div>
+          <div class="card-body" id="riskResult">
+            <p>
+              Click the Get Decision button to execute the <code>getData()</code> method to generate the SDK Payload and pass that to
+              a server-side API that will make the <a href="https://apidocs.pingidentity.com/pingone/platform/v1/api/#risk-evaluations" target="_blank">P1 Risk Evaluation</a> call
+            </p>
+          </div>
+          <div class="card-body d-none" id="riskDetails">
+            <p>
+              Click the Get Decision button to see the details of the Risk Evaluation decision
+            </p>
+          </div>
+          <div class="card-body d-none" id="predictorsHigh"></div>
+          <div class="card-body d-none" id="predictorsMed"></div>
+          <div class="card-body d-none" id="predictorsLow"></div>
+        </div>
+      </div>
+    </div>
+  </body>
+  <script src="/scripts/jsonpath.js" defer></script>
+  <!-- Load the script used to execute the Signals SDK profiling and make the P1 Protect evaluation call -->
+  <script
+      src="/scripts/profile.js"
+      defer
+  ></script>
+</html>
