@@ -12,12 +12,11 @@
     "@fastify/formbody": "^7.4.0",
     "@fastify/static": "^7.0.3",
     "dotenv": "^16.0.0",
-    "node-fetch": "3.3.2",
     "newman": "^6.2.1",
     "@fastify/cors": "^8.x"
   },
   "engines": {
-    "node": "16.x"
+    "node": ">=20.0.0"
   },
   "license": "MIT",
   "keywords": [

@@ -10,8 +10,7 @@ This demo application illustrates how to integrate the [PingOne Signals SDK](htt
 - **Hijack Payload** (`/hijack.html`): Inject a captured Signals payload into a new session to demonstrate hijack detection.
 
 ## Prerequisites
-
-- Node.js v16.x
+- Node.js v20.x (latest LTS)
 - A PingOne Protect Environment (Environment ID, Worker credentials, etc.)
 
 ## Setup

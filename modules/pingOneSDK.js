@@ -1,4 +1,3 @@
-import fetch, { Headers } from "node-fetch";
 import { Buffer } from "buffer";
 
 const p1ApiRoot = `${process.env.APIROOT}/environments/${process.env.ENVID}`
