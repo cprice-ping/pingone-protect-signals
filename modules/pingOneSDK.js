@@ -1,7 +1,5 @@
 import fetch, { Headers } from "node-fetch";
-
-import { createRequire } from "module";
-const require = createRequire(import.meta.url);
+import { Buffer } from "buffer";
 
 const p1ApiRoot = `${process.env.APIROOT}/environments/${process.env.ENVID}`
 const p1AuthRoot = `${process.env.AUTHROOT}/${process.env.ENVID}`
@@ -15,110 +13,94 @@ const p1OrchestrateRoot = `${process.env.ORCHESTRATEAPIROOT}/v1/company/${proces
 // Obtains an access token for the PingOne worker application used to call PingOne API endpoints.
 // This is a naive implementation that gets a token every time.
 // It could be improved to cache the token and only get a new one when it is expiring.
-const getWorkerToken = async (envObject) => {
-  
-  const apiEndpoint = "as/token"
-  
-  if (envObject){
-    var url = `https://auth.pingone.com/${envObject.envId}/${apiEndpoint}`
-    var authString = btoa(envObject.workerId+":"+envObject.workerSecret)
-  } else {
-    var url = `${p1AuthRoot}/${apiEndpoint}`
-    var authString = btoa(process.env.WORKERID+":"+process.env.WORKERSECRET)
- }
-  
-  var urlencoded = new URLSearchParams();
-  urlencoded.append("grant_type", "client_credentials");
-  
-  // console.log("Worker URL: ", url)
-  
-  const response = await fetch(url,
-    {
-      method: 'post',
-      body: urlencoded,
-      headers: { 
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'Authorization': "Basic " + authString
-    }
-  })
-  .then(res => res.json())
-  .then(data => { return data })
-  .catch(err => console.log(`${apiEndpoint} Error: ${err.code}`))
-  
-  return response.access_token;
+/**
+ * Obtains an access token for the PingOne worker application.
+ * @param {object} [envObject] Optional override for environment variables.
+ * @returns {Promise<string>} Access token string.
+ */
+async function getWorkerToken(envObject) {
+  const apiEndpoint = "as/token";
+  const envId = envObject?.envId ?? process.env.ENVID;
+  const workerId = envObject?.workerId ?? process.env.WORKERID;
+  const workerSecret = envObject?.workerSecret ?? process.env.WORKERSECRET;
+  const url = `https://auth.pingone.com/${envId}/${apiEndpoint}`;
+  const authString = Buffer.from(`${workerId}:${workerSecret}`).toString("base64");
+  const params = new URLSearchParams({ grant_type: "client_credentials" });
+
+  const response = await fetch(url, {
+    method: "POST",
+    body: params,
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+      "Authorization": `Basic ${authString}`,
+    },
+  });
+  if (!response.ok) {
+    throw new Error(`Failed to get worker token: ${response.status} ${response.statusText}`);
+  }
+  const data = await response.json();
+  return data.access_token;
 }
 
 // Obtains an "SDK token" that is passed into the DV widget to execute the flow policy.
 // The session token is passed in via 'global.sessionToken' to make it available to the flow.
 // exports.getSdkToken = async (sessionToken) => {
+/**
+ * Obtains an SDK token for the PingOne DevOps widget.
+ * @param {string} policyId Policy ID to apply.
+ * @param {string} [sessionToken] Optional session token to include.
+ * @returns {Promise<object>} SDK token response.
+ */
 export async function getSdkToken(policyId, sessionToken) {
-  const requestBody = {
-    policyId: policyId
-  };
-
+  const requestBody = { policyId };
   if (sessionToken) {
     requestBody.global = { sessionToken };
   }
 
-  console.log("SDK Request: ", requestBody)
-
-  const apiEndpoint = "sdktoken"
-  const url = `${p1OrchestrateRoot}/${apiEndpoint}`
-
-  const headers = new Headers
-  headers.append("Content-Type", "application/json")
-  headers.append("X-SK-API-KEY", process.env.DVAPIKEY)
-
+  const url = `${p1OrchestrateRoot}/sdktoken`;
   const response = await fetch(url, {
-    method: 'post',
-    headers: headers,
-    body: JSON.stringify(requestBody)
-  })
-  .then(res => res.json())
-  .then(data => { return data })
-  .catch(err => console.log(`${apiEndpoint} Error: ${err.code}`))
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-SK-API-KEY": process.env.DVAPIKEY,
+    },
+    body: JSON.stringify(requestBody),
+  });
+  if (!response.ok) {
+    throw new Error(`SDK token request failed: ${response.status} ${response.statusText}`);
+  }
+  return response.json();
+}
 
-  // console.log(response)
-  return response
-} 
-
+/**
+ * Make an authenticated API call to PingOne Protect endpoints.
+ *
+ * @param {string} url Full URL for the request.
+ * @param {string} method HTTP method to use (GET, POST, PUT, etc.).
+ * @param {object} [body] Optional request payload.
+ * @param {object} [extraHeaders] Optional additional headers to merge.
+ * @param {object} [envObject] Optional override for environment variables.
+ * @returns {Promise<object>} Parsed JSON response.
+ * @throws {Error} If the HTTP response status is not OK.
+ */
 async function makeApiCall(url, method, body, extraHeaders, envObject) {
-  console.log(`API Call: ${method} - ${url}`);
   const accessToken = await getWorkerToken(envObject);
-  
-  // console.log(atob(accessToken.split(".")[1]))
+  const headers = new Headers({
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${accessToken}`,
+    ...(extraHeaders || {}),
+  });
 
-  const headers = new Headers();
-  headers.append('Content-Type', 'application/json');
-  headers.append('Authorization', `Bearer ${accessToken}`);
-
-  // Add extra headers if provided
-  if (extraHeaders) {
-    for (const key in extraHeaders) {
-      if (extraHeaders.hasOwnProperty(key)) {
-        headers.append(key, extraHeaders[key]);
-      }
-    }
+  const options = { method, headers };
+  if (method.toLowerCase() !== 'get' && body != null) {
+    options.body = JSON.stringify(body);
   }
 
-  const fetchOptions = {
-    method: method,
-    headers: headers,
-  };
-
-  // Only add the body if the method is not 'get'
-  if (method.toLowerCase() !== 'get') {
-    fetchOptions.body = JSON.stringify(body);
+  const response = await fetch(url, options);
+  if (!response.ok) {
+    throw new Error(`API call failed [${method} ${url}]: ${response.status} ${response.statusText}`);
   }
-
-  try {
-    const response = await fetch(url, fetchOptions);
-    const data = await response.json();
-    return data;
-  } catch (err) {
-    console.log(`${url} Error: ${err}`);
-    return null; // Or throw the error, depending on how you want to handle it
-  }
+  return response.json();
 }
 
 /**
@@ -133,35 +115,23 @@ const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
  * @param {string} status The starting string that you want to see when it changes.
  * @returns {Promise<any>} A promise that resolves when the status is not what was requested.
  */
-async function pollApiCall(url, status) {
-  console.log(`Polling ${url} for status ${status}`)
+async function pollApiCall(url, expectedStatus) {
   const accessToken = await getWorkerToken();
   while (true) {
-    try {
-      const response = await fetch(url, {
-        headers: {
-          "Content-Type": "application/json",
-          'Authorization': `Bearer ${accessToken}`
-        }
-      });
-      // console.log("Poll API Response: ", JSON.stringify(response))
-      if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      const data = await response.json();
-      console.log('Checking status:', data.status);  // Optional: for debug purposes
-
-      if (data.status !== status) {
-          // console.log(`Current Status is ${status}.`);
-          return data;
-      }
-      // Wait for the specified interval before the next request
-      await delay(2000);
-    } catch (error) {
-        console.error('Failed to fetch from API:', error);
-        // Optional: decide whether to retry or handle errors differently
-        // await delay(2000);  // Wait before retrying  
+    const response = await fetch(url, {
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+    if (!response.ok) {
+      throw new Error(`Polling API failed: ${response.status} ${response.statusText}`);
     }
+    const data = await response.json();
+    if (data.status !== expectedStatus) {
+      return data;
+    }
+    await delay(2000);
   }
 }
 
@@ -172,135 +142,129 @@ async function pollApiCall(url, status) {
  *******************************************/
 
 // Retrieves the session identified by the provided token.
+/**
+ * Retrieves the current session.
+ * @param {string} sessionToken Session token identifier.
+ * @returns {Promise<object>} Session details.
+ */
 export async function getSession(sessionToken) {
-
   const accessToken = await getWorkerToken();
-  const apiEndpoint = "sessions"
-
-  const url = `${p1ApiRoot}/${apiEndpoint}/me`
-
+  const url = `${p1ApiRoot}/sessions/me`;
   const response = await fetch(url, {
-    method: 'get',
+    method: 'GET',
     headers: {
-      "Content-Type": "application/json",
+      'Content-Type': 'application/json',
       'Authorization': `Bearer ${accessToken}`,
-      'Cookie': `ST=${sessionToken}`
-    }
-  })
-  .then(res => res.json())
-  .then(data => { return data })
-  .catch(err => console.log(`${apiEndpoint} Error: ${err.code}`))
-  
-  return response;
+      'Cookie': `ST=${sessionToken}`,
+    },
+  });
+  if (!response.ok) {
+    throw new Error(`getSession failed: ${response.status} ${response.statusText}`);
+  }
+  return response.json();
 }
 
 // Updates the session identified by the provided token.
-export async function updateSession(sessionToken, session) {
+/**
+ * Updates the current session.
+ * @param {string} sessionToken Session token identifier.
+ * @param {object} sessionData Updated session payload.
+ * @returns {Promise<object>} Updated session details.
+ */
+export async function updateSession(sessionToken, sessionData) {
   const accessToken = await getWorkerToken();
-  const apiEndpoint = "sessions"
-
-  const url = `${p1ApiRoot}/${apiEndpoint}/me`
-
+  const url = `${p1ApiRoot}/sessions/me`;
   const response = await fetch(url, {
-    method: 'put',
+    method: 'PUT',
     headers: {
-      "Content-Type": "application/json",
+      'Content-Type': 'application/json',
       'Authorization': `Bearer ${accessToken}`,
-      'Cookie': `ST=${sessionToken}`
+      'Cookie': `ST=${sessionToken}`,
     },
-    body: JSON.stringify(session)
-  })
-  .then(res => res.json())
-  .then(data => { return data })
-  .catch(err => console.log(`${apiEndpoint} Error: ${err.code}`))
-  
-  return response;
+    body: JSON.stringify(sessionData),
+  });
+  if (!response.ok) {
+    throw new Error(`updateSession failed: ${response.status} ${response.statusText}`);
+  }
+  return response.json();
 }
 /* PingOne Sessions */
 
 /******************************************
 * PingOne Authorize
 ******************************************/
+/**
+ * Evaluate an authorization decision via PingOne Protect decision endpoint.
+ * @param {string} decisionEndpoint Decision endpoint identifier.
+ * @param {object} params Parameters to include in the decision request.
+ * @returns {Promise<object>} Authorization decision response.
+ */
 export async function getAuthorizeDecision(decisionEndpoint, params) {
-
-  const apiEndpoint = `decisionEndpoints/${decisionEndpoint}`
-  const url = `${p1ApiRoot}/${apiEndpoint}`
-  
-  const body = { parameters: params }
-  
-  // console.log(parameters)
-  
-  const response = await makeApiCall(url, "post", body)
-  
-  return response;
+  const apiEndpoint = `decisionEndpoints/${decisionEndpoint}`;
+  const url = `${p1ApiRoot}/${apiEndpoint}`;
+  const body = { parameters: params };
+  return makeApiCall(url, "post", body);
 }
 
 /******************************************
 * PingOne Credentials
 ******************************************/
-export async function pairDigitalWallet(applicationInstanceID, digitalWalletApplicationID, userId) { 
-
-  const apiEndpoint = `users/${userId}/digitalWallets`
-  const url = `${p1ApiRoot}/${apiEndpoint}`
-  
+/**
+ * Pair a digital wallet for a user in PingOne Protect.
+ * @param {string} applicationInstanceID Application instance identifier.
+ * @param {string} digitalWalletApplicationID Digital wallet application identifier.
+ * @param {string} userId User identifier.
+ * @returns {Promise<object>} Pairing response.
+ */
+export async function pairDigitalWallet(applicationInstanceID, digitalWalletApplicationID, userId) {
+  const apiEndpoint = `users/${userId}/digitalWallets`;
+  const url = `${p1ApiRoot}/${apiEndpoint}`;
   const body = {
-    "digitalWalletApplication": {
-        "id": digitalWalletApplicationID
-    },
-    "applicationInstance": {
-        "id": applicationInstanceID
-    }  
-  }
-  
-  const response = await makeApiCall(url, "post", body)
-
-  return response;
+    digitalWalletApplication: { id: digitalWalletApplicationID },
+    applicationInstance: { id: applicationInstanceID },
+  };
+  return makeApiCall(url, "post", body);
 }
 
-export async function getCredentialTransaction(transactionId) { 
-
-  const apiEndpoint = `presentationSessions`
-  const url = `${p1ApiRoot}/${apiEndpoint}/${transactionId}`
-  
-  const response = await pollApiCall(url, "INITIAL")
-  
-  return response;
+/**
+ * Poll a presentation session credential transaction until it leaves INITIAL status.
+ * @param {string} transactionId Presentation session transaction identifier.
+ * @returns {Promise<object>} Credential transaction result.
+ */
+export async function getCredentialTransaction(transactionId) {
+  const apiEndpoint = `presentationSessions`;
+  const url = `${p1ApiRoot}/${apiEndpoint}/${transactionId}`;
+  return pollApiCall(url, "INITIAL");
 }
 
-/******************************************
-* PingOne Protect
-******************************************/
-export async function getProtectDecision(body, envObject) { 
-
-  const apiEndpoint = `riskEvaluations`
-  
-  if (envObject){
-    var url = `https://api.pingone.${envObject.region}/v1/environments/${envObject.envId}/${apiEndpoint}`
-  } else {
-    var url = `${p1ApiRoot}/${apiEndpoint}`
-  }
-  
-  const response = await makeApiCall(url, "post", body, null, envObject)
-
-  return response;
+/**
+ * Evaluates a risk decision via the PingOne Protect API.
+ * @param {object} body Risk evaluation payload.
+ * @param {object} [envObject] Optional override for environment variables.
+ * @returns {Promise<object>} Risk evaluation response.
+ */
+export async function getProtectDecision(body, envObject) {
+  const apiEndpoint = `riskEvaluations`;
+  const url = envObject
+    ? `https://api.pingone.${envObject.region}/v1/environments/${envObject.envId}/${apiEndpoint}`
+    : `${p1ApiRoot}/${apiEndpoint}`;
+  return makeApiCall(url, "post", body, null, envObject);
 }
 
-export async function updateProtectDecision(id, status, envObject) { 
-
-  const body = {
-    "completionStatus": status
-  }
-
-  const apiEndpoint = `riskEvaluations/${id}/event`
-  if (envObject){
-    var url = `https://api.pingone.${envObject.region}/v1/environments/${envObject.envId}/${apiEndpoint}`
-  } else {
-    var url = `${p1ApiRoot}/${apiEndpoint}`
-  }
-  
-  const response = await makeApiCall(url, "put", body, null, envObject)
-  
-  return response;
+/**
+ * Updates a risk decision status via the PingOne Protect API.
+ * @param {string} id Evaluation identifier.
+ * @param {string} status Completion status.
+ * @param {object} [envObject] Optional override for environment variables.
+ * @returns {Promise<object>} Update response.
+ */
+export async function updateProtectDecision(id, status, envObject) {
+  const body = { completionStatus: status };
+  const apiEndpoint = `riskEvaluations/${id}/event`;
+  const url = envObject
+    ? `https://api.pingone.${envObject.region}/v1/environments/${envObject.envId}/${apiEndpoint}`
+    : `${p1ApiRoot}/${apiEndpoint}`;
+  return makeApiCall(url, "put", body, null, envObject);
 }
 /* PingOne Protect */
 
@@ -319,24 +283,20 @@ export async function createMfaDevice(userId, body){
 
 export async function activateMfaDevice(userId, deviceId, body){
   
-  const accessToken = await getWorkerToken();
-
-  const apiEndpoint = `users/${userId}/devices/${deviceId}`
-  const url = `${p1ApiRoot}/${apiEndpoint}`
-
+  const apiEndpoint = `users/${userId}/devices/${deviceId}`;
+  const url = `${p1ApiRoot}/${apiEndpoint}`;
   const response = await fetch(url, {
     method: 'POST',
     headers: {
-      "Content-Type": "application/vnd.pingidentity.device.activate+json",
-      "Authorization": `Bearer ${accessToken}`
+      'Content-Type': 'application/vnd.pingidentity.device.activate+json',
+      'Authorization': `Bearer ${await getWorkerToken()}`,
     },
-    body: JSON.stringify(body)
-  })
-  .then(response => response.text())
-  .then(data => { return data })
-  .catch(err => console.log(`${apiEndpoint} Error: ${err.code}`))
-  
-  return response
+    body: JSON.stringify(body),
+  });
+  if (!response.ok) {
+    throw new Error(`activateMfaDevice failed [${url}]: ${response.status} ${response.statusText}`);
+  }
+  return response.text();
 }
 
 export async function createMfaDeviceAuthentication(userId){
@@ -357,24 +317,20 @@ export async function createMfaDeviceAuthentication(userId){
 
 export async function validateMfaDeviceAuthentication(deviceAuthId, body){
   
-  const accessToken = await getWorkerToken();
-
-  const apiEndpoint = `deviceAuthentications/${deviceAuthId}`
-  const url = `${p1ApiRoot}/${apiEndpoint}`
-  
+  const apiEndpoint = `deviceAuthentications/${deviceAuthId}`;
+  const url = `${p1ApiRoot}/${apiEndpoint}`;
   const response = await fetch(url, {
     method: 'POST',
     headers: {
-      "Content-Type": "application/vnd.pingidentity.assertion.check+json",
-      "Authorization": `Bearer ${accessToken}`
+      'Content-Type': 'application/vnd.pingidentity.assertion.check+json',
+      'Authorization': `Bearer ${await getWorkerToken()}`,
     },
-    body: JSON.stringify(body)
-  })
-  .then(res => res.json())
-  .then(data => { return data })
-  .catch(err => console.log(`${apiEndpoint} Error: ${err.code}`))
-  
-  return response
+    body: JSON.stringify(body),
+  });
+  if (!response.ok) {
+    throw new Error(`validateMfaDeviceAuthentication failed [${url}]: ${response.status} ${response.statusText}`);
+  }
+  return response.json();
 }
 
 export async function rememberDevice(payload, sessionId, userId, envObject){
@@ -403,7 +359,13 @@ export async function rememberDevice(payload, sessionId, userId, envObject){
 /* PingOne MFA */
 
 /* PingOne SSO */
-export async function createUser(username, envObject){
+/**
+ * Create a new user in the PingOne environment.
+ * @param {string} username Username to create.
+ * @param {object} [envObject] Optional override for environment variables.
+ * @returns {Promise<object>} Created user object.
+ */
+export async function createUser(username, envObject) {
 
   const apiEndpoint = `users/`
   
@@ -422,46 +384,42 @@ export async function createUser(username, envObject){
     }
   }
   
-  const response = await makeApiCall(url, "post", body, null, envObject)
+  const response = await makeApiCall(url, "post", body, null, envObject);
+  return response;
 }
 
-export async function findUserByUsername(username, envObject){
-
-  const apiEndpoint = `users?filter=username eq "${username}"`
-  
-  if (envObject){
-    var url = `https://api.pingone.${envObject.region}/v1/environments/${envObject.envId}/${apiEndpoint}`
-  } else {
-    var url = `${p1ApiRoot}/${apiEndpoint}`
-  }
-  
-  const population = await getDefaultPopulation(envObject)
-   
-  const response = await makeApiCall(url, "get", null, null, envObject)
-
+/**
+ * Find a user by username, or create one if not found.
+ * @param {string} username Username to search for.
+ * @param {object} [envObject] Optional override for environment variables.
+ * @returns {Promise<string>} User ID.
+ */
+export async function findUserByUsername(username, envObject) {
+  const apiEndpoint = `users?filter=username eq "${username}"`;
+  const url = envObject
+    ? `https://api.pingone.${envObject.region}/v1/environments/${envObject.envId}/${apiEndpoint}`
+    : `${p1ApiRoot}/${apiEndpoint}`;
+  const response = await makeApiCall(url, "get", null, null, envObject);
   if (response.size === 1) {
-    return response._embedded.users[0].id
-  } else {
-    console.log("No User found - creating: ", username)
-    const newUser = await createUser(username, envObject)
-    console.log(newUser)
-    return createUser.id
+    return response._embedded.users[0].id;
   }
+  const newUser = await createUser(username, envObject);
+  return newUser.id;
 }
 
-export async function getDefaultPopulation(envObject){
-
-  const apiEndpoint = `populations`
-  // if (region){
-    var url = `https://api.pingone.${envObject.region}/v1/environments/${envObject.envId}/${apiEndpoint}`
-  // } else {
-  //   var url = `${p1ApiRoot}/${apiEndpoint}`
-  // }
-  
-  const response = await makeApiCall(url, "get", null, null, envObject)
-  const defaultPopulation = response._embedded.populations.filter(obj => obj.default === true);
-  
-  return defaultPopulation[0].id
+/**
+ * Retrieve the default population ID in the environment.
+ * @param {object} [envObject] Optional override for environment variables.
+ * @returns {Promise<string>} Default population ID.
+ */
+export async function getDefaultPopulation(envObject) {
+  const apiEndpoint = `populations`;
+  const url = envObject
+    ? `https://api.pingone.${envObject.region}/v1/environments/${envObject.envId}/${apiEndpoint}`
+    : `${p1ApiRoot}/${apiEndpoint}`;
+  const response = await makeApiCall(url, "get", null, null, envObject);
+  const [defaultPop] = response._embedded.populations.filter(obj => obj.default === true);
+  return defaultPop.id;
 }
 
 /* PingOne SSO */
@@ -473,23 +431,20 @@ export async function getDefaultPopulation(envObject){
 // Uploads an base64 JPEG image to P1 Images API.
 export async function uploadImage(filename, image) {
   
-  const accessToken = await getWorkerToken();
-
-  const apiEndpoint = `images`
-  const url = `${p1ApiRoot}/${apiEndpoint}`
-  
+  const apiEndpoint = `images`;
+  const url = `${p1ApiRoot}/${apiEndpoint}`;
   const response = await fetch(url, {
-    method: 'post',
+    method: 'POST',
     headers: {
       'Content-Type': 'image/jpeg',
-      'Authorization': `Bearer ${accessToken}`,
-      'content-disposition': `attachment; filename=${filename}`
+      'Authorization': `Bearer ${await getWorkerToken()}`,
+      'content-disposition': `attachment; filename=${filename}`,
     },
-    body: image
-    })
-    .then(res => res.json())
-    .catch(err => console.log(`${apiEndpoint} Error: ${err.code}`))
-  
-  return response;
+    body: image,
+  });
+  if (!response.ok) {
+    throw new Error(`uploadImage failed [${url}]: ${response.status} ${response.statusText}`);
+  }
+  return response.json();
 }
 //* PingOne Images API */

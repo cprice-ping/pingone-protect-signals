@@ -55,10 +55,11 @@ async function getRiskDecision() {
       sdkPayload = undefined
     }
     
-    const hijackedPayload = document.getElementById("hijackedPayload").value
-    if (hijackedPayload){
-      console.log("Hijacked payload added")
-      sdkPayload = document.getElementById("hijackedPayload").value
+    const hijackedElem = document.getElementById("hijackedPayload");
+    const hijackedPayload = hijackedElem.value || hijackedElem.textContent;
+    if (hijackedPayload) {
+      console.log("Hijacked payload added");
+      sdkPayload = hijackedPayload;
     }
 
     const body = {
@@ -230,50 +231,52 @@ function showAllTabs() {
   document.getElementById("navTraining-tab").classList.remove("d-none");
 }
 
-const hijackSignalsToggle = document.getElementById("hijackSignalsToggle");
-const hijackPayloadDisplay = document.getElementById("hijackPayloadDisplay");
-const hijackedPayloadDiv = document.getElementById("hijackedPayload");
-
-hijackSignalsToggle.addEventListener('change', async () => {
-  if (hijackSignalsToggle.checked) {
-    console.log("Hijack Payload Toggled ON");
-    hijackPayloadDisplay.classList.remove("d-none");
-    let sdkPayload = await _pingOneSignals.getData();
-    hijackedPayloadDiv.innerText = sdkPayload;
-
-    // Get the copy button *inside* the if block
-    const copyButton = document.getElementById("copyPayloadButton");
-    copyButton.addEventListener('click', () => {
-      navigator.clipboard.writeText(sdkPayload)
-        .then(() => {
-          copyButton.innerHTML = '<i class="bi bi-clipboard-check"></i> <span class="visually-hidden">Copied!</span>';
-          setTimeout(() => {
-            copyButton.innerHTML = '<i class="bi bi-clipboard"></i> <span class="visually-hidden">Copy</span>';
-          }, 1500);
-        })
-        .catch(err => {
-          console.error('Failed to copy text: ', err);
-          copyButton.innerHTML = '<i class="bi bi-clipboard-x"></i> <span class="visually-hidden">Error</span>';
-          setTimeout(() => {
-            copyButton.innerHTML = '<i class="bi bi-clipboard"></i> <span class="visually-hidden">Copy</span>';
-          }, 1500);
-        });
+{
+  const hijackSignalsToggle = document.getElementById("hijackSignalsToggle");
+  const hijackPayloadDisplay = document.getElementById("hijackPayloadDisplay");
+  const hijackedPayloadDiv = document.getElementById("hijackedPayload");
+  if (hijackSignalsToggle && hijackPayloadDisplay && hijackedPayloadDiv) {
+    hijackSignalsToggle.addEventListener('change', async () => {
+      if (hijackSignalsToggle.checked) {
+        hijackPayloadDisplay.classList.remove("d-none");
+        const sdkPayload = await _pingOneSignals.getData();
+        hijackedPayloadDiv.innerText = sdkPayload;
+        const copyButton = document.getElementById("copyPayloadButton");
+        if (copyButton) {
+          copyButton.addEventListener('click', () => {
+            navigator.clipboard.writeText(sdkPayload)
+              .then(() => {
+                copyButton.innerHTML = '<i class="bi bi-clipboard-check"></i> <span class="visually-hidden">Copied!</span>';
+                setTimeout(() => {
+                  copyButton.innerHTML = '<i class="bi bi-clipboard"></i> <span class="visually-hidden">Copy</span>';
+                }, 1500);
+              })
+              .catch(() => {
+                copyButton.innerHTML = '<i class="bi bi-clipboard-x"></i> <span class="visually-hidden">Error</span>';
+                setTimeout(() => {
+                  copyButton.innerHTML = '<i class="bi bi-clipboard"></i> <span class="visually-hidden">Copy</span>';
+                }, 1500);
+              });
+          });
+        }
+      } else {
+        hijackPayloadDisplay.classList.add("d-none");
+      }
     });
-  } else {
-    console.log("Hijack Payload Toggled OFF");
-    hijackPayloadDisplay.classList.add("d-none");
-    // Optionally, consider removing the event listener if needed
-    // const copyButton = document.getElementById("copyPayloadButton");
-    // if (copyButton) {
-    //   // Need a reference to the specific function to remove it correctly
-    // }
   }
-});
+}
 
-const aitmToggle = document.getElementById("aitmToggle");
-aitmToggle.addEventListener('change', async () => {
-  if (aitmToggle.checked) {
-    console.log("AITM Toggled ON");
-    window.open("https://p1ngone-protect-signals.glitch.me", '_blank');
+{
+  const aitmToggle = document.getElementById("aitmToggle");
+  if (aitmToggle) {
+    aitmToggle.addEventListener('change', () => {
+      if (aitmToggle.checked) {
+        window.open(window.location.origin, '_blank');
+      }
+    });
   }
-})
+}
+// Replace inline onclick handlers with event listeners
+document.getElementById("formSubmit")?.addEventListener("click", getRiskDecision);
+document.getElementById("evaluateButton")?.addEventListener("click", getRiskDecision);
+document.getElementById("generateDashboardButton")?.addEventListener("click", generateDashboard);

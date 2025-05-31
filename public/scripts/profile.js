@@ -73,6 +73,8 @@ function getRiskDecision() {
   // })
 }
 
+document.getElementById("formSubmit")?.addEventListener("click", getRiskDecision);
+
 /* Below functions used to parse and display the Evaluation response */
 function showRiskResult() {
   document.getElementById("cardPayload").classList.remove("d-none")

@@ -8,10 +8,6 @@
     />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <link
-      rel="shortcut icon"
-      href="https://cdn.glitch.com/a766be66-dd8a-4fa9-adb0-382568f98cae%2FD0DE7B9A-1F4C-4DFF-9FFD-5A53A78AFA9E.png?v=1630464370995"
-    />
     <script
       src="https://assets.pingone.com/signals/web-sdk/5.5.0/signals-sdk.js"
       defer
@@ -109,8 +105,8 @@
               </div>
               <button
                 id="formSubmit"
+                type="button"
                 class="btn btn-primary mb-3 shadow"
-                onclick="getRiskDecision()"
               >
                 Start Simulation
               </button>
@@ -130,8 +126,9 @@
                       </div>
                       Simulation in Progress
                       <button
+                        id="evaluateButton"
+                        type="button"
                         class="btn btn-sm btn-primary"
-                        onclick="getRiskDecision()"
                       >
                         Evaluate
                       </button>
@@ -152,9 +149,9 @@
                       >
                         <span class="me-2">Generate P1 Dashboard:</span>
                         <button
+                          type="button"
                           id="generateDashboardButton"
                           class="btn btn-success btn-sm"
-                          onclick="generateDashboard()"
                         >
                           Generate
                         </button>
@@ -233,11 +230,6 @@
             <div class="card-footer bg-white text-end">
               <a href="/" class="card-link text-start">Basic Profiling</a>
               <a
-                href="https://glitch.com/edit/#!/pingone-risk-signals"
-                class="card-link"
-                >View Code</a
-              >
-              <a
                 href="https://apidocs.pingidentity.com/pingone/native-sdks/v1/api/#pingone-risk-sdk-for-web"
                 class="card-link"
                 target="_blank"
@@ -250,23 +242,15 @@
                 >P1 Protect API</a
               >
               <a
-                href="https://p1ngone-protect-signals.glitch.me"
+                href="/hijack.html"
                 class="card-link"
-                target="_blank"
-                >Phishing Demo</a
-              >
-              <a
-                href="https://pingone-protect-signals.glitch.me/hijack.html"
-                class="card-link"
-                target="_blank"
-                >Hijack Payload</a
-              >
+              >Hijack Payload</a>
             </div>
           </div>
         </div>
         <div class="card w-50 mx-auto mt-4 border-info d-none" id="hijackPayloadDisplay">
           <div class="card-header d-flex justify-content-between align-items-center">
-            <span>Hijack Signals Payload (Open in Incognito - <a href="http://pingone-protect-signals.glitch.me/hijack.html">Hijack Page</a>)</span> 
+            <span>Hijack Signals Payload (Open in Incognito - <a href="/hijack.html">Hijack Page</a>)</span>
             <button class="btn btn-outline-secondary btn-sm" id="copyPayloadButton" title="Copy to Clipboard">
               <i class="bi bi-clipboard"></i> <span class="visually-hidden">Copy</span>
             </button>

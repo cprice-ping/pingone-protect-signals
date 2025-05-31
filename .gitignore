@@ -1,3 +1,8 @@
-.glitchdotcom.json
-.node-gyp
-node_modules
+# Local environment variables
+.env
+
+# Dependency directories
+node_modules/
+
+# OS or editor files
+.DS_Store

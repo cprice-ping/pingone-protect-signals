@@ -1,8 +1,8 @@
 // NodeJS imports
+import 'dotenv/config';
 import { fileURLToPath } from "url";
 import path from "path";
 
-import fetch from "node-fetch";
 import newman from "newman"
 
 // PingOne Server SDK
@@ -18,7 +18,8 @@ const fastify = Fastify({
   trustProxy: true
 });
 
-fastify.register(cors);
+// Enable CORS for all origins
+fastify.register(cors, { origin: true });
 
 // Initialize variables that are no longer available by default in Modules
 const __filename = fileURLToPath(import.meta.url);
@@ -36,98 +37,54 @@ fastify.register(import("@fastify/formbody"));
 /******************************************
 * PingOne Risk - Evaluation request
 ******************************************/
-fastify.all("/getRiskDecision", async (req, res) => {  
-  
-  // console.log(req.headers['x-forwarded-for'])
-  
-  let ipAddress = null
-  
-  if (req.body.ipv4) {
-    ipAddress = req.body.ipv4
-  } else {
-    ipAddress = req.headers['x-forwarded-for'].split(",")[0].trim()
-  }
-  
+fastify.post('/getRiskDecision', async (request, reply) => {
+  try {
+    const { ipv4, envId, region, workerId, workerSecret, username, sessionId, sdkpayload, rememberDevice } = request.body;
+    const ipAddress = ipv4 ?? request.ip;
     const envObject = {
-      envId: req.body.envId ?? process.env.ENVID,
-      region: req.body.region ?? "com",
-      workerId: req.body.workerId ?? process.env.WORKERID,
-      workerSecret: req.body.workerSecret ?? process.env.WORKERSECRET
-    }
-
-  const username = req.body.username
-  
-  console.log("Getting Risk Eval for: ", username)
-  
-  // Construct Risk Eval body
-    const body = {
-      event: {
-        "targetResource": { 
-            "id": "Signals SDK demo",
-            "name": "Signals SDK demo"
-        },
-        "ip": ipAddress, 
-        "flow": { 
-            "type": "AUTHENTICATION",
-            "sub-type": "ACTIVE_SESSION"
-        },
-        "session": {
-            "id": req.body.sessionId ?? "genericSessionId"
-        },
-        "browser": {
-            "userAgent": req.headers['user-agent']
-        },
-        "sdk": {
-          "signals": {
-              "data": req.body.sdkpayload // Signals SDK payload from Client
-          }
-        },
-        "user": {
-          "id": username, // if P1, send in the UserId and set `type` to PING_ONE
-          "name": username, // This is displayed in Dashboard and Audit
-          "type": "EXTERNAL"
-        },
-        "sharingType": "PRIVATE", 
-        "origin": "FACILE_DEMO"
-      }
-    } 
-  
-    const riskEval = await pingOneClient.getProtectDecision(body, envObject)
-    console.log("Result: ", riskEval.result)
-    if (!riskEval.result.recommendedAction){
-      console.log("No Recommended Action - Sending SUCCESS")
-      const updateEval = await pingOneClient.updateProtectDecision(riskEval.id, "SUCCESS", envObject)
-    }
-    
-    console.log("Remember Device: ", req.body.rememberDevice)
-  
-    if (req.body.rememberDevice){
-      const device = await pingOneClient.rememberDevice(req.body.sdkpayload, req.body.sessionId ?? "genericSessionId", username, envObject)
-    }
-  
-    return riskEval
-})
-
-fastify.post("/generateDashboard", async (req, res) => {
-
-    const envVars = {
-        envId: req.body.envId,
-        pingOneAuthNURL: `https://auth.pingone.${req.body.region}`,
-        pingOneMgmtURL: `https://api.pingone.${req.body.region}`,
-        workerId: req.body.workerId,
-        workerSecret: req.body.workerSecret
+      envId: envId ?? process.env.ENVID,
+      region: region ?? 'com',
+      workerId: workerId ?? process.env.WORKERID,
+      workerSecret: workerSecret ?? process.env.WORKERSECRET,
     };
 
-    res.send({"message": "Dashboard Events executing"});
+    const eventPayload = {
+      targetResource: { id: 'Signals SDK demo', name: 'Signals SDK demo' },
+      ip: ipAddress,
+      flow: { type: 'AUTHENTICATION', 'sub-type': 'ACTIVE_SESSION' },
+      session: { id: sessionId ?? 'genericSessionId' },
+      browser: { userAgent: request.headers['user-agent'] },
+      sdk: { signals: { data: sdkpayload } },
+      user: { id: username, name: username, type: 'EXTERNAL' },
+      sharingType: 'PRIVATE',
+      origin: 'FACILE_DEMO',
+    };
 
-    // Invoke the async function immediately
-    (async () => {
-        try {
-            await runNewmanCollection(process.env.protectDashboardUrl, envVars, true, 100);
-        } catch (error) {
-            console.error("Error during cleanup:", error);
-        }
-    })(); // Notice the added parentheses here to call the function
+    const result = await pingOneClient.getProtectDecision({ event: eventPayload }, envObject);
+    if (!result.result.recommendedAction) {
+      await pingOneClient.updateProtectDecision(result.id, 'SUCCESS', envObject);
+    }
+    if (rememberDevice) {
+      await pingOneClient.rememberDevice(sdkpayload, sessionId ?? 'genericSessionId', username, envObject);
+    }
+    return result;
+  } catch (err) {
+    request.log.error(err);
+    return reply.status(500).send({ error: err.message });
+  }
+});
+
+fastify.post('/generateDashboard', async (request, reply) => {
+  const { envId, region, workerId, workerSecret } = request.body;
+  const envVars = {
+    envId,
+    pingOneAuthNURL: `https://auth.pingone.${region}`,
+    pingOneMgmtURL: `https://api.pingone.${region}`,
+    workerId,
+    workerSecret,
+  };
+  reply.send({ message: 'Dashboard events executing' });
+  runNewmanCollection(process.env.protectDashboardUrl, envVars, true, 100).catch(err => request.log.error(err));
 });
 
 // This allows you to run Newman as a function and receive a JSON object of the resulting Environment variables
@@ -150,20 +107,18 @@ async function runNewmanCollection(url, env, noLogs, iterationCount) {
             reporter: { cli: { silent: noLogs } },
             iterationCount: iterationCount, // Specify the number of iterations
         });
-        console.log(`Newman collection executed ${iterationCount} times.`);
+        fastify.log.info(`Newman collection executed ${iterationCount} times.`);
     } catch (error) {
-        console.error(`Error executing Newman collection: ${error}`);
+        fastify.log.error(`Error executing Newman collection: ${error}`);
     }
 }
 
 // Run the server and report out to the logs
-fastify.listen(
-  { port: process.env.PORT, host: "0.0.0.0" },
-  function (err, address) {
-    if (err) {
-      console.error(err);
-      process.exit(1);
-    }
-    console.log(`Your app is listening on ${address}`);
+const port = process.env.PORT || 3000;
+fastify.listen({ port, host: '0.0.0.0' }, (err, address) => {
+  if (err) {
+    fastify.log.error(err);
+    process.exit(1);
   }
-);
+  fastify.log.info(`Server listening at ${address}`);
+});

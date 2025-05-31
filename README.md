@@ -1,31 +1,70 @@
-# PingOne Signals SDK
+# PingOne Protect - Signals SDK Demo
 
-This project is a demo of using the [PingOne Signals SDK](https://apidocs.pingidentity.com/pingone/native-sdks/v1/api/#pingone-risk-sdk-for-web) to profile a webpage 
-and use it to receive a decision from the [PingOne Risk](https://developer.pingidentity.com/en/cloud-services/pingone-risk.html) service
+This demo application illustrates how to integrate the [PingOne Signals SDK](https://apidocs.pingidentity.com/pingone/native-sdks/v1/api/#pingone-risk-sdk-for-web) for browser profiling and use the [PingOne Protect Risk API](https://developer.pingidentity.com/en/cloud-services/pingone-risk.html) to retrieve risk decisions.
 
-## What's in this project?
+## Features
 
-← `README.md`: That’s this file, where you can tell people what your cool website does and how you built it.
+- **Basic Profiling** (`/index.html`): Initialize the Signals SDK and obtain raw payload.
+- **Form Interaction** (`/form.html`): Profile user interactions on a form and perform a risk evaluation.
+- **Simulate Traffic** (`/simulate.html`): Send periodic, randomized risk evaluation calls to simulate ongoing user activity.
+- **Hijack Payload** (`/hijack.html`): Inject a captured Signals payload into a new session to demonstrate hijack detection.
 
-← `server.js`: The **Node.js** server script for your new site. The server is used to perform the Risk Evaluation call using a Worker token from PingOne.
+## Prerequisites
 
-← `.env`: Contains the secrets for the P1 Worker app
+- Node.js v16.x
+- A PingOne Protect Environment (Environment ID, Worker credentials, etc.)
 
-← `package.json`: The NPM packages for your project's dependencies.
+## Setup
 
-← `public/`: This folder holds the demo website
+1. Clone the repository:
 
-← `public/index.html`: This is the main page. The Signals SDK is loaded in the `<head>` section
+   ```bash
+   git clone <repo-url>
+   cd pingone-protect-signals
+   ```
 
-← `public/scripts/profile.js`: A script to initialize the Signals SDK and perform the `getData()` request when the button is pressed
+2. Install dependencies:
 
-**_Want a minimal version of this project to build your own Node.js app? Check out [Blank Node](https://glitch.com/edit/#!/remix/glitch-blank-node)!_**
+   ```bash
+   npm install
+   ```
 
-![Glitch](https://cdn.glitch.com/a9975ea6-8949-4bab-addb-8a95021dc2da%2FLogo_Color.svg?v=1602781328576)
+3. Create a `.env` file in the project root with your PingOne credentials:
 
-## You built this with Glitch!
+   ```ini
+   # .env
+   ENVID=<Your PingOne Environment ID>
+   WORKERID=<Your Worker (Client) ID>
+   WORKERSECRET=<Your Worker Secret>
+   DVAPIKEY=<Your DevOps API Key for SDK Token>
+   # Optional overrides:
+   APIROOT=https://api.pingone.com/v1/environments
+   AUTHROOT=https://auth.pingone.com
+   ORCHESTRATEAPIROOT=https://orchestrate.pingone.com
+   protectDashboardUrl=<Newman collection URL or file path>
+   ```
 
-[Glitch](https://glitch.com) is a friendly community where millions of people come together to build web apps and websites.
+4. Start the server:
 
-- Need more help? [Check out our Help Center](https://help.glitch.com/) for answers to any common questions.
-- Ready to make it official? [Become a paid Glitch member](https://glitch.com/pricing) to boost your app with private sharing, more storage and memory, domains and more.
+   ```bash
+   npm start
+   ```
+
+5. Open your browser to `http://localhost:3000/` and explore the demo pages.
+
+## Environment Variables
+
+| Variable             | Description                                             |
+|----------------------|---------------------------------------------------------|
+| `ENVID`              | PingOne Protect Environment ID                          |
+| `WORKERID`           | PingOne Worker (Client) ID                              |
+| `WORKERSECRET`       | PingOne Worker Secret                                   |
+| `DVAPIKEY`           | API key for obtaining SDK token                         |
+| `APIROOT`            | (Optional) PingOne API root URL                         |
+| `AUTHROOT`           | (Optional) PingOne Auth root URL                        |
+| `ORCHESTRATEAPIROOT` | (Optional) PingOne Orchestrate API root URL             |
+| `protectDashboardUrl`| (Optional) Newman collection URL or local file path      |
+
+## License
+
+MIT
