@@ -64,6 +64,22 @@ This demo application illustrates how to integrate the [PingOne Signals SDK](htt
 | `ORCHESTRATEAPIROOT` | (Optional) PingOne Orchestrate API root URL             |
 | `protectDashboardUrl`| (Optional) Newman collection URL or local file path      |
 
+## Docker
+
+Build the Docker image:
+
+```bash
+docker build -t pingone-protect-signals .
+```
+
+Run the container (using your `.env` file for environment variables):
+
+```bash
+docker run -d -p 3000:3000 --env-file .env --name pingone-protect-signals pingone-protect-signals
+```
+
+Open your browser to `http://localhost:3000/` to access the demo.
+
 ## License
 
 MIT

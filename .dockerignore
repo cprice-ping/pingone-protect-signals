@@ -1,0 +1,18 @@
+# Ignore node modules and debug logs
+node_modules
+npm-debug.log*
+
+# Ignore environment files
+.env
+
+# Ignore local logs
+*.log
+
+# Ignore Dockerfile and Docker ignore file
+Dockerfile
+.dockerignore
+
+# Ignore git metadata and OS files
+.git
+.gitignore
+/.DS_Store

@@ -1,6 +1,6 @@
 {
   "name": "pingone-protect-signals",
-  "version": "0.1.0",
+  "version": "0.0.1",
   "description": "Demo application showcasing PingOne Protect Signals SDK integration in a standalone web app.",
   "main": "server.js",
   "scripts": {
