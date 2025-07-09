@@ -92,17 +92,15 @@ async function getRiskDecision() {
       const data = await response.json();
 
       // Display the decision result alongside the request payload as a table
-      const requestData = data.request || {};
-      let reqTable = '<table class="table table-sm"><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody>';
-      Object.entries(requestData).forEach(([key, val]) => {
-        reqTable += `<tr><td>${key}</td><td>${JSON.stringify(val)}</td></tr>`;
-      });
-      reqTable += '</tbody></table>';
+      // Show decision JSON
       document.getElementById("riskResult").innerHTML =
-        `<div class="row">
-           <div class="col-md-6"><h6>Decision Result</h6><pre>${JSON.stringify(data.result, null, 2)}</pre></div>
-           <div class="col-md-6"><h6>Request Payload</h6>${reqTable}</div>
-         </div>`;
+        "<pre>" + JSON.stringify(data.result, null, 2) + "</pre>";
+      // Show the echoed request JSON in its own tab pane
+      const reqPane = document.getElementById("requestPayload");
+      if (reqPane) {
+        reqPane.innerHTML =
+          "<pre>" + JSON.stringify(data.request || {}, null, 2) + "</pre>";
+      }
       document.getElementById("riskDetails").innerHTML =
         "<pre>" + JSON.stringify(data, null, 2) + "</pre>";
 
@@ -235,6 +233,7 @@ function showAllTabs() {
 
   document.getElementById("navResult-tab").classList.remove("d-none");
   document.getElementById("navDetails-tab").classList.remove("d-none");
+  document.getElementById("navRequest-tab").classList.remove("d-none");
   document.getElementById("navHigh-tab").classList.remove("d-none");
   document.getElementById("navMed-tab").classList.remove("d-none");
   document.getElementById("navLow-tab").classList.remove("d-none");
