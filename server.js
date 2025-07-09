@@ -1,5 +1,6 @@
 // NodeJS imports
 import 'dotenv/config';
+import './modules/config.js';
 import { fileURLToPath } from "url";
 import path from "path";
 
