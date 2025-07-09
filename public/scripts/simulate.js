@@ -91,8 +91,18 @@ async function getRiskDecision() {
 
       const data = await response.json();
 
+      // Display the decision result alongside the request payload as a table
+      const requestData = data.request || {};
+      let reqTable = '<table class="table table-sm"><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody>';
+      Object.entries(requestData).forEach(([key, val]) => {
+        reqTable += `<tr><td>${key}</td><td>${JSON.stringify(val)}</td></tr>`;
+      });
+      reqTable += '</tbody></table>';
       document.getElementById("riskResult").innerHTML =
-        "<pre>" + JSON.stringify(data.result, null, 2) + "</pre>";
+        `<div class="row">
+           <div class="col-md-6"><h6>Decision Result</h6><pre>${JSON.stringify(data.result, null, 2)}</pre></div>
+           <div class="col-md-6"><h6>Request Payload</h6>${reqTable}</div>
+         </div>`;
       document.getElementById("riskDetails").innerHTML =
         "<pre>" + JSON.stringify(data, null, 2) + "</pre>";
 
