@@ -13,11 +13,21 @@ const p1OrchestrateRoot = `${process.env.ORCHESTRATEAPIROOT}/v1/company/${proces
 // This is a naive implementation that gets a token every time.
 // It could be improved to cache the token and only get a new one when it is expiring.
 /**
+ * Cache for worker token to avoid fetching on every call.
+ */
+let _cachedWorkerToken = null;
+let _cachedWorkerTokenExpiry = 0;
+
+/**
  * Obtains an access token for the PingOne worker application.
  * @param {object} [envObject] Optional override for environment variables.
  * @returns {Promise<string>} Access token string.
  */
 async function getWorkerToken(envObject) {
+  // Return cached token if still valid (with 5s buffer)
+  if (_cachedWorkerToken && Date.now() < _cachedWorkerTokenExpiry - 5000) {
+    return _cachedWorkerToken;
+  }
   const apiEndpoint = "as/token";
   const envId = envObject?.envId ?? process.env.ENVID;
   const workerId = envObject?.workerId ?? process.env.WORKERID;
@@ -38,7 +48,9 @@ async function getWorkerToken(envObject) {
     throw new Error(`Failed to get worker token: ${response.status} ${response.statusText}`);
   }
   const data = await response.json();
-  return data.access_token;
+  _cachedWorkerToken = data.access_token;
+  _cachedWorkerTokenExpiry = Date.now() + (data.expires_in * 1000);
+  return _cachedWorkerToken;
 }
 
 // Obtains an "SDK token" that is passed into the DV widget to execute the flow policy.
