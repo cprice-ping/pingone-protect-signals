@@ -271,12 +271,30 @@ function showAllTabs() {
   if (aitmToggle) {
     aitmToggle.addEventListener('change', () => {
       if (aitmToggle.checked) {
-        window.open(window.location.origin, '_blank');
+        // Redirect to the AITM demonstration environment
+        window.open(
+          'https://p1ngone-protect-signals.ping-demos.com',
+          '_blank'
+        );
       }
     });
   }
 }
 // Replace inline onclick handlers with event listeners
+
 document.getElementById("formSubmit")?.addEventListener("click", getRiskDecision);
 document.getElementById("evaluateButton")?.addEventListener("click", getRiskDecision);
 document.getElementById("generateDashboardButton")?.addEventListener("click", generateDashboard);
+
+// If running in the AITM demo domain, switch styling and title
+(function () {
+  const AITM_HOST = 'p1ngone-protect-signals.ping-demos.com';
+  if (window.location.hostname === AITM_HOST) {
+    document.body.classList.replace('bg-danger', 'bg-primary');
+    const titleEl = document.querySelector('h5.card-title');
+    if (titleEl) {
+      titleEl.textContent = `${titleEl.textContent} (AITM)`;
+    }
+    document.title = `${document.title} (AITM)`;
+  }
+})();
