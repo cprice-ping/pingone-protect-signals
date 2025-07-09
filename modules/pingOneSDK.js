@@ -95,28 +95,37 @@ export async function getSdkToken(policyId, sessionToken) {
  * @throws {Error} If the HTTP response status is not OK.
  */
 async function makeApiCall(url, method, body, extraHeaders, envObject) {
-  const accessToken = await getWorkerToken(envObject);
-  const headers = new Headers({
-    'Content-Type': 'application/json',
-    'Authorization': `Bearer ${accessToken}`,
-    ...(extraHeaders || {}),
-  });
+  // Attempt up to two times: if we get 401/403, clear cached token and retry once.
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    const accessToken = await getWorkerToken(envObject);
+    const headers = new Headers({
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${accessToken}`,
+      ...(extraHeaders || {}),
+    });
 
-  const options = { method, headers };
-  if (method.toLowerCase() !== 'get' && body != null) {
-    options.body = JSON.stringify(body);
-  }
+    const options = { method, headers };
+    if (method.toLowerCase() !== 'get' && body != null) {
+      options.body = JSON.stringify(body);
+    }
 
-  const response = await fetch(url, options);
-  if (!response.ok) {
-    // Include response body for debugging (e.g. API schema errors)
+    const response = await fetch(url, options);
+    if (response.ok) {
+      return response.json();
+    }
+    // On first 401/403, clear cached token (in case scopes/rights changed) and retry
+    if (attempt === 1 && (response.status === 401 || response.status === 403)) {
+      _cachedWorkerToken = null;
+      _cachedWorkerTokenExpiry = 0;
+      continue;
+    }
+    // Otherwise fail, including any error body
     const errorText = await response.text();
     throw new Error(
       `API call failed [${method} ${url}]: ${response.status} ${response.statusText}` +
         (errorText ? ` - ${errorText}` : '')
     );
   }
-  return response.json();
 }
 
 /**
