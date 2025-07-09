@@ -79,7 +79,7 @@ async function getRiskDecision() {
       ip: ipv4,
       flow: { type: 'AUTHENTICATION', 'sub-type': 'ACTIVE_SESSION' },
       session: { id: sessionId },
-      browser: { userAgent: request.headers['user-agent'] },
+      browser: { userAgent: navigator.userAgent },
       sdk: { signals: { data: sdkPayload } },
       user: { id: document.getElementById("floatInputUsername").value, name: document.getElementById("floatInputUsername").value, type: 'EXTERNAL' },
       sharingType: 'PRIVATE',
