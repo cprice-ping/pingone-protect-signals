@@ -60,14 +60,15 @@ fastify.post('/getRiskDecision', async (request, reply) => {
       origin: 'FACILE_DEMO',
     };
 
-    const result = await pingOneClient.getProtectDecision({ event: eventPayload }, envObject);
-    if (!result.result.recommendedAction) {
-      await pingOneClient.updateProtectDecision(result.id, 'SUCCESS', envObject);
+    const decision = await pingOneClient.getProtectDecision({ event: eventPayload }, envObject);
+    if (!decision.result.recommendedAction) {
+      await pingOneClient.updateProtectDecision(decision.id, 'SUCCESS', envObject);
     }
     if (rememberDevice) {
       await pingOneClient.rememberDevice(sdkpayload, sessionId ?? 'genericSessionId', username, envObject);
     }
-    return result;
+    // Echo back the incoming request body for client-side display
+    return { ...decision, request: request.body };
   } catch (err) {
     request.log.error(err);
     return reply.status(500).send({ error: err.message });

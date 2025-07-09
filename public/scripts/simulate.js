@@ -91,8 +91,16 @@ async function getRiskDecision() {
 
       const data = await response.json();
 
+      // Display the decision result alongside the request payload as a table
+      // Show decision JSON
       document.getElementById("riskResult").innerHTML =
         "<pre>" + JSON.stringify(data.result, null, 2) + "</pre>";
+      // Show the echoed request JSON in its own tab pane
+      const reqPane = document.getElementById("requestPayload");
+      if (reqPane) {
+        reqPane.innerHTML =
+          "<pre>" + JSON.stringify(data.request || {}, null, 2) + "</pre>";
+      }
       document.getElementById("riskDetails").innerHTML =
         "<pre>" + JSON.stringify(data, null, 2) + "</pre>";
 
@@ -225,6 +233,7 @@ function showAllTabs() {
 
   document.getElementById("navResult-tab").classList.remove("d-none");
   document.getElementById("navDetails-tab").classList.remove("d-none");
+  document.getElementById("navRequest-tab").classList.remove("d-none");
   document.getElementById("navHigh-tab").classList.remove("d-none");
   document.getElementById("navMed-tab").classList.remove("d-none");
   document.getElementById("navLow-tab").classList.remove("d-none");
