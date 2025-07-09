@@ -69,7 +69,7 @@ fastify.post('/getRiskDecision', async (request, reply) => {
       await pingOneClient.rememberDevice(sdkpayload, sessionId ?? 'genericSessionId', username, envObject);
     }
     // Echo back the incoming request body for client-side display
-    return { ...decision, request: request.body };
+    return { ...decision, request: eventPayload };
   } catch (err) {
     request.log.error(err);
     return reply.status(500).send({ error: err.message });
