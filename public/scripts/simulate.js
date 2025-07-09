@@ -74,18 +74,6 @@ async function getRiskDecision() {
       rememberDevice: document.getElementById("rememberDeviceToggle").checked
     };
 
-    const requestBody = {
-      targetResource: { id: 'Signals SDK demo', name: 'Signals SDK demo' },
-      ip: ipv4,
-      flow: { type: 'AUTHENTICATION', 'sub-type': 'ACTIVE_SESSION' },
-      session: { id: sessionId },
-      browser: { userAgent: navigator.userAgent },
-      sdk: { signals: { data: sdkPayload } },
-      user: { id: document.getElementById("floatInputUsername").value, name: document.getElementById("floatInputUsername").value, type: 'EXTERNAL' },
-      sharingType: 'PRIVATE',
-      origin: 'FACILE_DEMO',
-    }
-
     console.log(body);
 
     try {
@@ -107,12 +95,25 @@ async function getRiskDecision() {
       // Show decision JSON
       document.getElementById("riskResult").innerHTML =
         "<pre>" + JSON.stringify(data.result, null, 2) + "</pre>";
-      // Show the echoed request JSON in its own tab pane
-      const reqPane = requestBody;
-      if (reqPane) {
-        reqPane.innerHTML =
-          "<pre>" + JSON.stringify(data.request || {}, null, 2) + "</pre>";
+      
+      // Show the structure of the Risk Evaluation Request
+      const requestBody = {
+        targetResource: { id: 'Signals SDK demo', name: 'Signals SDK demo' },
+        ip: ipv4,
+        flow: { type: 'AUTHENTICATION', 'sub-type': 'ACTIVE_SESSION' },
+        session: { id: sessionId },
+        browser: { userAgent: navigator.userAgent },
+        sdk: { signals: { data: sdkPayload } },
+        user: { id: document.getElementById("floatInputUsername").value, name: document.getElementById("floatInputUsername").value, type: 'EXTERNAL' },
+        sharingType: 'PRIVATE',
+        origin: 'FACILE_DEMO',
       }
+
+      // Display the Request Object (made Server-Side)
+      document.getElementById("requestPayload").innerHTML =
+          "<pre>" + JSON.stringify(data.request || {}, null, 2) + "</pre>";
+
+      // Display the Evaluation Response Object
       document.getElementById("riskDetails").innerHTML =
         "<pre>" + JSON.stringify(data, null, 2) + "</pre>";
 
