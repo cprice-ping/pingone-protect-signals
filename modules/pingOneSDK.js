@@ -109,7 +109,12 @@ async function makeApiCall(url, method, body, extraHeaders, envObject) {
 
   const response = await fetch(url, options);
   if (!response.ok) {
-    throw new Error(`API call failed [${method} ${url}]: ${response.status} ${response.statusText}`);
+    // Include response body for debugging (e.g. API schema errors)
+    const errorText = await response.text();
+    throw new Error(
+      `API call failed [${method} ${url}]: ${response.status} ${response.statusText}` +
+        (errorText ? ` - ${errorText}` : '')
+    );
   }
   return response.json();
 }
