@@ -1,4 +1,20 @@
 const sessionId = crypto.randomUUID();
+
+// Load default config from server to pre-populate environment/workers
+async function bootstrapConfig() {
+  try {
+    const res = await fetch('/config');
+    if (!res.ok) throw new Error(`Config load failed ${res.status}`);
+    const cfg = await res.json();
+    document.getElementById('floatInputEnv').value = cfg.envId;
+    document.getElementById('floatInputWorkerId').value = cfg.workerId;
+    document.getElementById('floatInputWorkerSecret').value = cfg.workerSecret;
+    document.getElementById('regionSelect').value = cfg.region;
+  } catch (e) {
+    console.error('Failed to load config:', e);
+  }
+}
+bootstrapConfig();
 let countdownInterval; // Declare countdownInterval in a higher scope
 
 function onPingOneSignalsReady(callback) {
