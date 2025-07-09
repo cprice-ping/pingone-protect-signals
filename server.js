@@ -30,15 +30,6 @@ const __dirname = path.dirname(__filename);
 // Formbody lets us parse incoming forms
 fastify.register(import("@fastify/formbody"));
 
-// Expose application configuration (env defaults) to client for pre-populating forms
-fastify.get('/config', async (_request, reply) => {
-  reply.send({
-    envId: process.env.ENVID,
-    region: 'com',
-    workerId: process.env.WORKERID,
-    workerSecret: process.env.WORKERSECRET,
-  });
-});
 
 /******************************************
 * PingOne Risk - Evaluation request
