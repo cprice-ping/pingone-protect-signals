@@ -63,15 +63,16 @@ async function getRiskDecision() {
     }
 
     const body = {
-      username: document.getElementById("floatInputUsername").value,
-      sdkpayload: sdkPayload,
-      envId: document.getElementById("floatInputEnv").value,
-      region: document.getElementById("regionSelect").value,
-      workerId: document.getElementById("floatInputWorkerId").value,
-      workerSecret: document.getElementById("floatInputWorkerSecret").value,
-      sessionId: sessionId,
-      ipv4: ipv4,
-      rememberDevice: document.getElementById("rememberDeviceToggle").checked
+      targetResource: { id: 'Signals SDK demo', name: 'Signals SDK demo' },
+      ip: ipv4,
+      flow: { type: 'AUTHENTICATION', 'sub-type': 'ACTIVE_SESSION' },
+      session: { id: sessionId },
+      // Capture user-agent from client-side
+      browser: { userAgent: navigator.userAgent },
+      sdk: { signals: { data: sdkPayload } },
+      user: { id: document.getElementById("floatInputUsername").value, name: document.getElementById("floatInputUsername").value, type: 'EXTERNAL' },
+      sharingType: 'PRIVATE',
+      origin: 'FACILE_DEMO',
     };
 
     console.log(body);
