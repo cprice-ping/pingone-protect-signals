@@ -284,7 +284,7 @@ function showAllTabs() {
       if (aitmToggle.checked) {
         // Redirect to the AITM demonstration environment
         window.open(
-          'https://p1ngone-protect-signals.ping-demos.com/simulate.html',
+          'https://pingone-protect-signals.p1ng-demos.com/simulate.html',
           '_blank'
         );
       }
@@ -299,7 +299,7 @@ document.getElementById("generateDashboardButton")?.addEventListener("click", ge
 
 // If running in the AITM demo domain, switch styling and title
 (function () {
-  const AITM_HOST = 'p1ngone-protect-signals.ping-demos.com';
+  const AITM_HOST = 'pingone-protect-signals.p1ng-demos.com';
   if (window.location.hostname === AITM_HOST) {
     // Switch from red to a darker blue background
     document.body.classList.remove('bg-danger');
