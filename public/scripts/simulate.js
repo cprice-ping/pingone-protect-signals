@@ -273,7 +273,7 @@ function showAllTabs() {
       if (aitmToggle.checked) {
         // Redirect to the AITM demonstration environment
         window.open(
-          'https://p1ngone-protect-signals.ping-demos.com',
+          'https://p1ngone-protect-signals.ping-demos.com/simulate.html',
           '_blank'
         );
       }
@@ -290,7 +290,9 @@ document.getElementById("generateDashboardButton")?.addEventListener("click", ge
 (function () {
   const AITM_HOST = 'p1ngone-protect-signals.ping-demos.com';
   if (window.location.hostname === AITM_HOST) {
-    document.body.classList.replace('bg-danger', 'bg-primary');
+    // Switch from red to a darker blue background
+    document.body.classList.remove('bg-danger');
+    document.body.style.backgroundColor = '#0d1f47';
     const titleEl = document.querySelector('h5.card-title');
     if (titleEl) {
       titleEl.textContent = `${titleEl.textContent} (AITM)`;
