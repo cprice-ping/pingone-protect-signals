@@ -285,7 +285,7 @@ function showAllTabs() {
       if (aitmToggle.checked) {
         // Redirect to the AITM demonstration environment
         window.open(
-          'https://p1ngone-protect-signals.ping-demos.com/simulate.html',
+          'https://pingone-protect-signals.p1ng-demos.com/simulate.html',
           '_blank'
         );
       }
