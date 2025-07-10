@@ -26,14 +26,10 @@ fastify.register(cors, { origin: true });
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Setup our static files
-fastify.register(import("@fastify/static"), {
-  root: path.join(__dirname, "public"),
-  prefix: "/", // optional: default '/'
-});
 
 // Formbody lets us parse incoming forms
 fastify.register(import("@fastify/formbody"));
+
 
 /******************************************
 * PingOne Risk - Evaluation request
@@ -43,10 +39,10 @@ fastify.post('/getRiskDecision', async (request, reply) => {
     const { ipv4, envId, region, workerId, workerSecret, username, sessionId, sdkpayload, rememberDevice } = request.body;
     const ipAddress = ipv4 ?? request.ip;
     const envObject = {
-      envId: envId ?? process.env.ENVID,
-      region: region ?? 'com',
-      workerId: workerId ?? process.env.WORKERID,
-      workerSecret: workerSecret ?? process.env.WORKERSECRET,
+      envId: envId || process.env.ENVID,
+      region: region || 'com',
+      workerId: workerId || process.env.WORKERID,
+      workerSecret: workerSecret || process.env.WORKERSECRET,
     };
 
     const eventPayload = {
@@ -115,6 +111,12 @@ async function runNewmanCollection(url, env, noLogs, iterationCount) {
         fastify.log.error(`Error executing Newman collection: ${error}`);
     }
 }
+
+// Setup our static files (serve demo pages/assets)
+fastify.register(import("@fastify/static"), {
+  root: path.join(__dirname, "public"),
+  prefix: "/", // optional: default '/'
+});
 
 // Run the server and report out to the logs
 const port = process.env.PORT || 3000;

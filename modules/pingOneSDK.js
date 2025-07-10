@@ -1,8 +1,19 @@
 import { Buffer } from "buffer";
 
-const p1ApiRoot = `${process.env.APIROOT}/environments/${process.env.ENVID}`
-const p1AuthRoot = `${process.env.AUTHROOT}/${process.env.ENVID}`
-const p1OrchestrateRoot = `${process.env.ORCHESTRATEAPIROOT}/v1/company/${process.env.ENVID}`
+// Normalize environment overrides (strip BOM and whitespace)
+const rawApiRoot = (process.env.APIROOT || '').replace(/^[\uFEFF\s]+/, '').trim();
+const rawAuthRoot = (process.env.AUTHROOT || '').replace(/^[\uFEFF\s]+/, '').trim();
+const rawOrchestrateApiRoot = (process.env.ORCHESTRATEAPIROOT || '').replace(/^[\uFEFF\s]+/, '').trim();
+
+const p1ApiRoot = rawApiRoot
+  ? `${rawApiRoot}/environments/${process.env.ENVID}`
+  : `https://api.pingone.com/v1/environments/${process.env.ENVID}`;
+const p1AuthRoot = rawAuthRoot
+  ? `${rawAuthRoot}/${process.env.ENVID}`
+  : `https://auth.pingone.com/${process.env.ENVID}`;
+const p1OrchestrateRoot = rawOrchestrateApiRoot
+  ? `${rawOrchestrateApiRoot}/v1/company/${process.env.ENVID}`
+  : `https://orchestrate.pingone.com/v1/company/${process.env.ENVID}`;
 
 
 /********************************************
@@ -95,23 +106,37 @@ export async function getSdkToken(policyId, sessionToken) {
  * @throws {Error} If the HTTP response status is not OK.
  */
 async function makeApiCall(url, method, body, extraHeaders, envObject) {
-  const accessToken = await getWorkerToken(envObject);
-  const headers = new Headers({
-    'Content-Type': 'application/json',
-    'Authorization': `Bearer ${accessToken}`,
-    ...(extraHeaders || {}),
-  });
+  // Attempt up to two times: if we get 401/403, clear cached token and retry once.
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    const accessToken = await getWorkerToken(envObject);
+    const headers = new Headers({
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${accessToken}`,
+      ...(extraHeaders || {}),
+    });
 
-  const options = { method, headers };
-  if (method.toLowerCase() !== 'get' && body != null) {
-    options.body = JSON.stringify(body);
-  }
+    const options = { method, headers };
+    if (method.toLowerCase() !== 'get' && body != null) {
+      options.body = JSON.stringify(body);
+    }
 
-  const response = await fetch(url, options);
-  if (!response.ok) {
-    throw new Error(`API call failed [${method} ${url}]: ${response.status} ${response.statusText}`);
+    const response = await fetch(url, options);
+    if (response.ok) {
+      return response.json();
+    }
+    // On first 401/403, clear cached token (in case scopes/rights changed) and retry
+    if (attempt === 1 && (response.status === 401 || response.status === 403)) {
+      _cachedWorkerToken = null;
+      _cachedWorkerTokenExpiry = 0;
+      continue;
+    }
+    // Otherwise fail, including any error body
+    const errorText = await response.text();
+    throw new Error(
+      `API call failed [${method} ${url}]: ${response.status} ${response.statusText}` +
+        (errorText ? ` - ${errorText}` : '')
+    );
   }
-  return response.json();
 }
 
 /**

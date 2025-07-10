@@ -30,7 +30,7 @@ This demo application illustrates how to integrate the [PingOne Signals SDK](htt
 
 3. Create a `.env` file in the project root with your PingOne credentials:
 
-   ```ini
+  ```ini
    # .env
    ENVID=<Your PingOne Environment ID>
    WORKERID=<Your Worker (Client) ID>
@@ -41,7 +41,9 @@ This demo application illustrates how to integrate the [PingOne Signals SDK](htt
    AUTHROOT=https://auth.pingone.com
    ORCHESTRATEAPIROOT=https://orchestrate.pingone.com
    protectDashboardUrl=<Newman collection URL or file path>
-   ```
+  ```
+
+> **Note:** Your Worker (client) credentials must have the proper PingOne Protect API permissions (e.g. to call riskEvaluations). If you recently updated the worker scopes, restart the server to fetch a fresh token.
 
 4. Start the server:
 
