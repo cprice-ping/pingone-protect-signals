@@ -392,6 +392,37 @@ export async function rememberDevice(payload, sessionId, userId, envObject){
 
   return response
 }
+
+export async function checkRememberDevice(payload, sessionId, userId, cookie, envObject){
+  
+  const p1UserId = await findUserByUsername(userId, envObject)
+  const apiEndpoint = `deviceAuthentications`
+  
+  if (envObject){
+    var url = `https://auth.pingone.${envObject.region}/${envObject.envId}/${apiEndpoint}`
+  } else {
+    var url = `${p1AuthRoot}/${apiEndpoint}`
+  }
+  
+  const body = {
+    "user": {
+        "id": p1UserId
+    }, 
+    "payload": {
+        "type": "BROWSER",
+        "value": payload
+    },
+    "deviceSession": {
+        "id": sessionId
+    }
+  }
+
+  
+  
+  const response = await makeApiCall(url, "post", body, null, envObject)
+
+  return response
+}
 /* PingOne MFA */
 
 /* PingOne SSO */
