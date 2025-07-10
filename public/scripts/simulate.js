@@ -300,7 +300,7 @@ document.getElementById("generateDashboardButton")?.addEventListener("click", ge
 
 // If running in the AITM demo domain, switch styling and title
 (function () {
-  const AITM_HOST = 'p1ngone-protect-signals.ping-demos.com';
+  const AITM_HOST = 'pingone-protect-s1gnals.ping-demos.com';
   if (window.location.hostname === AITM_HOST) {
     // Switch from red to a darker blue background
     document.body.classList.remove('bg-danger');

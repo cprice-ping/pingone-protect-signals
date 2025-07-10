@@ -50,7 +50,6 @@ fastify.post('/getRiskDecision', async (request, reply) => {
       ip: ipAddress,
       flow: { type: 'AUTHENTICATION', 'sub-type': 'ACTIVE_SESSION' },
       session: { id: sessionId ?? 'genericSessionId' },
-      // Prefer client-sent userAgent, fallback to header
       browser: { userAgent: request.body.browser?.userAgent || request.headers['user-agent'] },
       sdk: { signals: { data: sdkpayload } },
       user: { id: username, name: username, type: 'EXTERNAL' },
