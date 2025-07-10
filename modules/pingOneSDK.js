@@ -1,8 +1,19 @@
 import { Buffer } from "buffer";
 
-const p1ApiRoot = `${process.env.APIROOT}/environments/${process.env.ENVID}`
-const p1AuthRoot = `${process.env.AUTHROOT}/${process.env.ENVID}`
-const p1OrchestrateRoot = `${process.env.ORCHESTRATEAPIROOT}/v1/company/${process.env.ENVID}`
+// Normalize environment overrides (strip BOM and whitespace)
+const rawApiRoot = (process.env.APIROOT || '').replace(/^[\uFEFF\s]+/, '').trim();
+const rawAuthRoot = (process.env.AUTHROOT || '').replace(/^[\uFEFF\s]+/, '').trim();
+const rawOrchestrateApiRoot = (process.env.ORCHESTRATEAPIROOT || '').replace(/^[\uFEFF\s]+/, '').trim();
+
+const p1ApiRoot = rawApiRoot
+  ? `${rawApiRoot}/environments/${process.env.ENVID}`
+  : `https://api.pingone.com/v1/environments/${process.env.ENVID}`;
+const p1AuthRoot = rawAuthRoot
+  ? `${rawAuthRoot}/${process.env.ENVID}`
+  : `https://auth.pingone.com/${process.env.ENVID}`;
+const p1OrchestrateRoot = rawOrchestrateApiRoot
+  ? `${rawOrchestrateApiRoot}/v1/company/${process.env.ENVID}`
+  : `https://orchestrate.pingone.com/v1/company/${process.env.ENVID}`;
 
 
 /********************************************
