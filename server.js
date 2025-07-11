@@ -86,7 +86,7 @@ fastify.post('/generateDashboard', async (request, reply) => {
     workerSecret,
   };
   reply.send({ message: 'Dashboard events executing' });
-  await runNewmanCollection(process.env.protectDashboardUrl, envVars, true, 10);
+  await runNewmanCollection(process.env.protectDashboardUrl, envVars, true, 100);
 });
 
 // This allows you to run Newman as a function and receive a JSON object of the resulting Environment variables
@@ -109,9 +109,9 @@ async function runNewmanCollection(url, env, noLogs, iterationCount) {
           reporter: { cli: { silent: noLogs } },
           iterationCount: iterationCount, // Specify the number of iterations
       });
-      fastify.log.info(`Newman collection executed ${iterationCount} times.`);
+      console.log(`Newman collection executed ${iterationCount} times.`);
   } catch (error) {
-      fastify.log.error(`Error executing Newman collection: ${error}`);
+      console.log(`Error executing Newman collection: ${error}`);
   }
 }
 
