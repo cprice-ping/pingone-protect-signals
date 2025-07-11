@@ -68,7 +68,7 @@ async function getWorkerToken(envObject) {
 // The session token is passed in via 'global.sessionToken' to make it available to the flow.
 // exports.getSdkToken = async (sessionToken) => {
 /**
- * Obtains an SDK token for the PingOne DevOps widget.
+ * Obtains an SDK token for the PingOne DaVinci widget.
  * @param {string} policyId Policy ID to apply.
  * @param {string} [sessionToken] Optional session token to include.
  * @returns {Promise<object>} SDK token response.
@@ -119,6 +119,9 @@ async function makeApiCall(url, method, body, extraHeaders, envObject) {
     if (method.toLowerCase() !== 'get' && body != null) {
       options.body = JSON.stringify(body);
     }
+
+    // console.log(`Making API call [${method}] ${url} with body:`, body);
+    // console.log(`Headers:`, Object.fromEntries(headers.entries()));
 
     const response = await fetch(url, options);
     if (response.ok) {
@@ -336,7 +339,6 @@ export async function activateMfaDevice(userId, deviceId, body){
 }
 
 export async function createMfaDeviceAuthentication(userId){
-  
   const apiEndpoint = `deviceAuthentications`
   const url = `${p1ApiRoot}/${apiEndpoint}`
   
@@ -345,9 +347,7 @@ export async function createMfaDeviceAuthentication(userId){
         "id": userId
       } 
     }
-
   const response = await makeApiCall(url, "post", body)
-  
   return response
 }
 
@@ -375,9 +375,9 @@ export async function rememberDevice(payload, sessionId, userId, envObject){
   const apiEndpoint = `users/${p1UserId}/devices`
   
   if (envObject){
-    var url = `https://api.pingone.${envObject.region}/v1/environments/${envObject.envId}/${apiEndpoint}`
+    let url = `https://api.pingone.${envObject.region}/v1/environments/${envObject.envId}/${apiEndpoint}`;
   } else {
-    var url = `${p1ApiRoot}/${apiEndpoint}`
+    let url = `${p1ApiRoot}/${apiEndpoint}`;
   }
   
   const body = {
@@ -389,7 +389,6 @@ export async function rememberDevice(payload, sessionId, userId, envObject){
   }
   
   const response = await makeApiCall(url, "post", body, null, envObject)
-
   return response
 }
 
@@ -414,13 +413,11 @@ export async function checkRememberDevice(payload, sessionId, userId, cookie, en
     },
     "deviceSession": {
         "id": sessionId
-    }
+    },
+    "cookie": cookie
   }
 
-  
-  
   const response = await makeApiCall(url, "post", body, null, envObject)
-
   return response
 }
 /* PingOne MFA */

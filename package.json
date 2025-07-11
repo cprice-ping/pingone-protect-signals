@@ -1,6 +1,6 @@
 {
   "name": "pingone-protect-signals",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Demo application showcasing PingOne Protect Signals SDK integration in a standalone web app.",
   "main": "server.js",
   "scripts": {
@@ -16,7 +16,7 @@
     "@fastify/cors": "^8.x"
   },
   "engines": {
-    "node": ">=20.0.0"
+    "node": "~18.0.0"
   },
   "license": "MIT",
   "keywords": [

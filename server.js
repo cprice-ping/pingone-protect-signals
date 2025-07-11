@@ -1,10 +1,14 @@
 // NodeJS imports
+import { Buffer } from 'buffer';
+globalThis.Buffer = Buffer;
 import 'dotenv/config';
 import './modules/config.js';
 import { fileURLToPath } from "url";
 import path from "path";
 
-import newman from "newman"
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
+const newman = require('newman');
 
 // PingOne Server SDK
 import * as pingOneClient from "./modules/pingOneSDK.js"
@@ -48,7 +52,7 @@ fastify.post('/getRiskDecision', async (request, reply) => {
     const eventPayload = {
       targetResource: { id: 'Signals SDK demo', name: 'Signals SDK demo' },
       ip: ipAddress,
-      flow: { type: 'AUTHENTICATION', 'sub-type': 'ACTIVE_SESSION' },
+      flow: { type: 'AUTHENTICATION' },
       session: { id: sessionId ?? 'genericSessionId' },
       browser: { userAgent: request.body.browser?.userAgent || request.headers['user-agent'] },
       sdk: { signals: { data: sdkpayload } },
@@ -82,16 +86,16 @@ fastify.post('/generateDashboard', async (request, reply) => {
     workerSecret,
   };
   reply.send({ message: 'Dashboard events executing' });
-  runNewmanCollection(process.env.protectDashboardUrl, envVars, true, 100).catch(err => request.log.error(err));
+  await runNewmanCollection(process.env.protectDashboardUrl, envVars, true, 10);
 });
 
 // This allows you to run Newman as a function and receive a JSON object of the resulting Environment variables
 // Call with the Collection and any starting variables (as an Array)
 // Logging can be enabled with noLogs: false
 async function runNewmanCollection(url, env, noLogs, iterationCount) {
-    try {
-        await newman.run({
-            collection: url,
+  try {
+      newman.run({
+          collection: url,
             environment: {
               values: [
                 { key: "envId", value: env.envId },
@@ -101,14 +105,14 @@ async function runNewmanCollection(url, env, noLogs, iterationCount) {
                 { key: "workerSecret", value: env.workerSecret } 
               ]
             },
-            reporters: ["cli"],
-            reporter: { cli: { silent: noLogs } },
-            iterationCount: iterationCount, // Specify the number of iterations
-        });
-        fastify.log.info(`Newman collection executed ${iterationCount} times.`);
-    } catch (error) {
-        fastify.log.error(`Error executing Newman collection: ${error}`);
-    }
+          reporters: ["cli"],
+          reporter: { cli: { silent: noLogs } },
+          iterationCount: iterationCount, // Specify the number of iterations
+      });
+      fastify.log.info(`Newman collection executed ${iterationCount} times.`);
+  } catch (error) {
+      fastify.log.error(`Error executing Newman collection: ${error}`);
+  }
 }
 
 // Setup our static files (serve demo pages/assets)
