@@ -4,7 +4,8 @@ globalThis.Buffer = Buffer;
 import 'dotenv/config';
 import './modules/config.js';
 import { fileURLToPath } from "url";
-import path from "path";
+import { exec } from 'child_process';
+import path from 'path';
 
 import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
@@ -93,26 +94,33 @@ fastify.post('/generateDashboard', async (request, reply) => {
 // Call with the Collection and any starting variables (as an Array)
 // Logging can be enabled with noLogs: false
 async function runNewmanCollection(url, env, noLogs, iterationCount) {
-  try {
-      newman.run({
-          collection: url,
-            environment: {
-              values: [
-                { key: "envId", value: env.envId },
-                { key: "pingOneAuthNURL", value: env.pingOneAuthNURL },
-                { key: "pingOneMgmtURL", value: env.pingOneMgmtURL },
-                { key: "workerId", value: env.workerId },
-                { key: "workerSecret", value: env.workerSecret } 
-              ]
-            },
-          reporters: ["cli"],
-          reporter: { cli: { silent: noLogs } },
-          iterationCount: iterationCount, // Specify the number of iterations
-      });
-      console.log(`Newman collection executed ${iterationCount} times.`);
-  } catch (error) {
-      console.log(`Error executing Newman collection: ${error}`);
-  }
+  return new Promise((resolve, reject) => {
+    // Prepare environment variables as Newman CLI arguments
+    const envVars = [
+      `--env-var envId=${env.envId}`,
+      `--env-var pingOneAuthNURL=${env.pingOneAuthNURL}`,
+      `--env-var pingOneMgmtURL=${env.pingOneMgmtURL}`,
+      `--env-var workerId=${env.workerId}`,
+      `--env-var workerSecret=${env.workerSecret}`
+    ].join(' ');
+
+    const silent = noLogs ? '--silent' : '';
+    const iterations = iterationCount ? `--iteration-count ${iterationCount}` : '';
+
+    // If url is a remote URL, use as-is; if local, resolve path
+    const collectionPath = url.startsWith('http') ? url : path.resolve(url);
+
+    const cmd = `npx newman run "${collectionPath}" ${envVars} ${iterations} ${silent}`;
+    exec(cmd, (error, stdout, stderr) => {
+      if (error) {
+        console.error(`Newman error: ${stderr}`);
+        reject(error);
+      } else {
+        console.log(stdout);
+        resolve(stdout);
+      }
+    });
+  });
 }
 
 // Setup our static files (serve demo pages/assets)
