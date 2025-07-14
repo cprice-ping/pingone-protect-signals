@@ -4,7 +4,7 @@ globalThis.Buffer = Buffer;
 import 'dotenv/config';
 import './modules/config.js';
 import { fileURLToPath } from "url";
-import { exec } from 'child_process';
+import { spawn } from 'child_process';
 import path from 'path';
 
 import { createRequire } from 'module';
@@ -77,6 +77,8 @@ fastify.post('/getRiskDecision', async (request, reply) => {
   }
 });
 
+import { runProtectDashboard } from './modules/protectDashboardSimulator.js';
+
 fastify.post('/generateDashboard', async (request, reply) => {
   const { envId, region, workerId, workerSecret } = request.body;
   const envVars = {
@@ -87,41 +89,19 @@ fastify.post('/generateDashboard', async (request, reply) => {
     workerSecret,
   };
   reply.send({ message: 'Dashboard events executing' });
-  await runNewmanCollection(process.env.protectDashboardUrl, envVars, true, 100);
-});
-
-// This allows you to run Newman as a function and receive a JSON object of the resulting Environment variables
-// Call with the Collection and any starting variables (as an Array)
-// Logging can be enabled with noLogs: false
-async function runNewmanCollection(url, env, noLogs, iterationCount) {
-  return new Promise((resolve, reject) => {
-    // Prepare environment variables as Newman CLI arguments
-    const envVars = [
-      `--env-var envId=${env.envId}`,
-      `--env-var pingOneAuthNURL=${env.pingOneAuthNURL}`,
-      `--env-var pingOneMgmtURL=${env.pingOneMgmtURL}`,
-      `--env-var workerId=${env.workerId}`,
-      `--env-var workerSecret=${env.workerSecret}`
-    ].join(' ');
-
-    const silent = noLogs ? '--silent' : '';
-    const iterations = iterationCount ? `--iteration-count ${iterationCount}` : '';
-
-    // If url is a remote URL, use as-is; if local, resolve path
-    const collectionPath = url.startsWith('http') ? url : path.resolve(url);
-
-    const cmd = `npx newman run "${collectionPath}" ${envVars} ${iterations} ${silent}`;
-    exec(cmd, (error, stdout, stderr) => {
-      if (error) {
-        console.error(`Newman error: ${stderr}`);
-        reject(error);
-      } else {
-        console.log(stdout);
-        resolve(stdout);
+  // Run 100 sequentially
+  (async () => {
+    for (let i = 0; i < 100; i++) {
+      try {
+        await runProtectDashboard(envVars);
+        console.log(`Protect Dashboard run ${i + 1}/100 completed`);
+      } catch (err) {
+        console.error(`Protect Dashboard run ${i + 1}/100 failed:`, err);
       }
-    });
-  });
-}
+    }
+    console.log('All 100 Protect Dashboard runs completed');
+  })();
+});
 
 // Setup our static files (serve demo pages/assets)
 fastify.register(import("@fastify/static"), {
