@@ -8,15 +8,18 @@
   },
   "type": "module",
   "dependencies": {
-    "fastify": "^4.6.2",
+    "@fastify/cors": "^8.x",
     "@fastify/formbody": "^7.4.0",
     "@fastify/static": "^7.0.3",
     "dotenv": "^16.0.0",
-    "newman": "^6.2.1",
-    "@fastify/cors": "^8.x"
+    "fastify": "^4.6.2",
+    "user-agents": "^1.1.600"
+  },
+  "devDependencies": {
+    "newman": "^6.2.1"
   },
   "engines": {
-    "node": "~18.0.0"
+    "node": "~20.0.0"
   },
   "license": "MIT",
   "keywords": [
